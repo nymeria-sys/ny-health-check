@@ -11,11 +11,6 @@ RUN npm install --production
 # Copiar código fonte
 COPY src ./src
 
-# Criar usuário não-root
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
-
-USER nodejs
-
 # Comando de inicialização
+# Nota: Rodando como root para ter acesso ao socket do Docker
 CMD ["npm", "start"]
