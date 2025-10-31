@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  # Exemplo de aplicação que será monitorada
+  app:
+    image: nginx:alpine
+    container_name: my-app
+    ports:
+      - "8080:80"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Serviço de Health Check
+  health-checker:
+    build: .
+    container_name: ny-health-check
+    restart: unless-stopped
+    environment:
+      # URL do endpoint a ser monitorado
+      ENDPOINT_URL: ${ENDPOINT_URL:-http://app:80}
+
+      # Intervalo de verificação em milissegundos (60000 = 1 minuto)
+      CHECK_INTERVAL_MS: ${CHECK_INTERVAL_MS:-60000}
+
+      # Tipo de autenticação: 'basic', 'bearer', ou deixe vazio
+      AUTH_TYPE: ${AUTH_TYPE:-}
+
+      # Credenciais para autenticação básica
+      AUTH_USERNAME: ${AUTH_USERNAME:-}
+      AUTH_PASSWORD: ${AUTH_PASSWORD:-}
+
+      # Token para autenticação Bearer
+      AUTH_TOKEN: ${AUTH_TOKEN:-}
+
+      # Lista de containers para reiniciar (separados por vírgula)
+      CONTAINERS_TO_RESTART: ${CONTAINERS_TO_RESTART:-my-app}
+
+      # Caminho do socket do Docker
+      DOCKER_SOCKET_PATH: /var/run/docker.sock
+    volumes:
+      # IMPORTANTE: Montar o socket do Docker para permitir gerenciamento de containers
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - app
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
